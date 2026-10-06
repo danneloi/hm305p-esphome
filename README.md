@@ -2,7 +2,7 @@
 
 🇬🇧 English · **🇩🇪 [Deutsche Version / German version](README.de.md)**
 
-> 🇩🇪 **Alles auch auf Deutsch verfügbar:** Anleitung in [README.de.md](README.de.md), ESPHome-Konfiguration mit deutschen Entitätsnamen in [`hm305p-esp32c3.de.yaml`](hm305p-esp32c3.de.yaml) und Vorschaubild in [`images/preview.de.png`](images/preview.de.png).
+> 🇩🇪 **Alles auch auf Deutsch verfügbar:** Anleitung in [README.de.md](README.de.md), ESPHome-Konfiguration mit deutschen Entitätsnamen in [`hm305p-esp32c3.de.yaml`](hm305p-esp32c3.de.yaml), Dashboard in [`dashboard/dashboard.de.yaml`](dashboard/dashboard.de.yaml) und Vorschaubilder in [`images/preview.de.png`](images/preview.de.png) und [`images/dashboard.de.png`](images/dashboard.de.png).
 
 ![Preview](images/preview.png)
 
@@ -22,6 +22,7 @@ An **ESP32-C3 Super Mini** is wired directly to the PSU's internal UART, the 4-p
 | **Presets** | 3.3 V · 5 V · 12 V · 20 V · short hunting (1 V / 1 A) |
 | **Device memory** | "Load M1" … "Load M6" buttons apply the values stored on the PSU |
 | **Other** | Key beep on/off, model ID, WiFi signal |
+| **Dashboard** | Ready-made Home Assistant dashboard, see [Dashboard](#dashboard) |
 
 Every preset **turns the output off first**, then sets OVP → OCP → current → voltage. The output is deliberately **not** switched back on automatically: the HM305P briefly dips when the voltage changes under load, see [markrages/hm305p_problem](https://github.com/markrages/hm305p_problem).
 
@@ -86,6 +87,19 @@ PSU (+ R T −)                        ESP32-C3 Super Mini
 
 If a `<<<` follows each `>>>`, the connection works.
 
+---
+
+## Dashboard
+
+![Dashboard](images/dashboard.png)
+
+*Example view with sample values.* A ready-made Home Assistant dashboard using only built-in cards (no HACS) is in [`dashboard/dashboard.yaml`](dashboard/dashboard.yaml). The German version is [`dashboard/dashboard.de.yaml`](dashboard/dashboard.de.yaml), preview: [`images/dashboard.de.png`](images/dashboard.de.png).
+
+It contains live gauges, output switch, operating mode (CV/CC), protection status with a warning banner, set voltage / current limit / OVP / OCP with +/− buttons, presets, M1–M6, a one-hour history and device info.
+
+**Add it:** Settings → Dashboards → Add dashboard → *New dashboard from scratch* → open → ⋮ → Edit → ⋮ → *Raw configuration editor* → replace everything → Save.
+
+**Entity IDs:** The dashboard expects the entity IDs that Home Assistant creates for `hm305p-esp32c3.yaml` (device `bench-psu`), e.g. `sensor.bench_psu_voltage`. If you assign the device to an area, Home Assistant may put the area in front (e.g. `sensor.kitchen_bench_psu_voltage`). Check the real IDs under Settings → Devices → *bench-psu* and adjust them with search & replace in the raw editor. For the HM310P, raise the gauge maximum for current to 10 and for power to 300.
 ---
 
 ## Modbus registers (selection)

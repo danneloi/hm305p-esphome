@@ -20,6 +20,7 @@ Ein **ESP32-C3 Super Mini** hängt direkt am internen UART des Netzteils, also a
 | **Presets** | 3,3 V · 5 V · 12 V · 20 V · Kurzschlusssuche (1 V / 1 A) |
 | **Gerätespeicher** | Buttons „M1 laden“ … „M6 laden“ übernehmen die am Gerät gespeicherten Werte |
 | **Sonstiges** | Tastenton ein/aus, Modellkennung, WLAN-Signal |
+| **Dashboard** | Fertiges Home-Assistant-Dashboard, siehe [Dashboard](#dashboard) |
 
 Alle Presets schalten **zuerst den Ausgang aus** und setzen dann OVP → OCP → Strom → Spannung. Der Ausgang wird bewusst **nicht** automatisch eingeschaltet. Das HM305P bricht beim Ändern der Spannung unter Last kurz ein, siehe [markrages/hm305p_problem](https://github.com/markrages/hm305p_problem).
 
@@ -84,6 +85,19 @@ Netzteil (+ R T −)                   ESP32-C3 Super Mini
 
 Kommt nach `>>>` ein `<<<`, steht die Verbindung.
 
+---
+
+## Dashboard
+
+![Dashboard](images/dashboard.de.png)
+
+*Beispielansicht mit Beispielwerten.* Ein fertiges Home-Assistant-Dashboard, nur mit Standard-Karten (kein HACS), liegt in [`dashboard/dashboard.de.yaml`](dashboard/dashboard.de.yaml). Die englische Fassung ist [`dashboard/dashboard.yaml`](dashboard/dashboard.yaml), Vorschau: [`images/dashboard.png`](images/dashboard.png).
+
+Enthalten sind Rundinstrumente für die Live-Werte, Ausgang-Schalter, Betriebsmodus (CV/CC), Schutzstatus mit Warnhinweis, Sollspannung / Strombegrenzung / OVP / OCP mit +/−-Tasten, Presets, M1–M6, ein Verlauf über eine Stunde und Geräteinfos.
+
+**Einfügen:** Einstellungen → Dashboards → Dashboard hinzufügen → *Neu von Grund auf* → öffnen → ⋮ → Bearbeiten → ⋮ → *Raw-Konfigurationseditor* → alles ersetzen → Speichern.
+
+**Entitäts-IDs:** Das Dashboard erwartet die IDs, die Home Assistant für `hm305p-esp32c3.de.yaml` (Gerät `labornetzteil`) anlegt, z. B. `sensor.labornetzteil_spannung`. Ist das Gerät einem Bereich zugeordnet, setzt Home Assistant den Bereich eventuell davor (z. B. `sensor.kuche_labornetzteil_spannung`). Die echten IDs findest du unter Einstellungen → Geräte → *labornetzteil*. Im Raw-Editor per Suchen/Ersetzen anpassen. Beim HM310P das Maximum der Rundinstrumente für Strom auf 10 und für Leistung auf 300 setzen.
 ---
 
 ## Modbus-Register (Auswahl)

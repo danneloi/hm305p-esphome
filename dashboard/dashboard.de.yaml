@@ -1,0 +1,246 @@
+# Home Assistant Dashboard für das HM305P (ESPHome-Gerät "labornetzteil")
+# Einfügen: Einstellungen → Dashboards → Dashboard hinzufügen → "Neu von Grund auf"
+#           → ⋮ → Bearbeiten → ⋮ → Raw-Konfigurationseditor → alles ersetzen.
+# Nur Standard-Karten, keine HACS-Erweiterungen nötig.
+# Andere Gerätenamen? "labornetzteil" per Suchen/Ersetzen anpassen.
+title: Labornetzteil
+views:
+  - title: Labornetzteil
+    path: labornetzteil
+    icon: mdi:power-plug-battery
+    type: sections
+    max_columns: 3
+    sections:
+      # ---------- Live-Werte ----------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Live-Werte
+            icon: mdi:gauge
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: sensor.labornetzteil_schutzstatus
+                state_not:
+                  - OK
+                  - unbekannt
+                  - unavailable
+                  - unknown
+            card:
+              type: markdown
+              content: >-
+                ## ⚠️ Schutz ausgelöst: {{ states('sensor.labornetzteil_schutzstatus') }}
+
+                Ausgang wurde abgeschaltet. Ursache prüfen, dann Ausgang wieder einschalten.
+          - type: gauge
+            entity: sensor.labornetzteil_spannung
+            name: Spannung
+            min: 0
+            max: 30
+            needle: true
+            grid_options: { columns: 4 }
+          - type: gauge
+            entity: sensor.labornetzteil_strom
+            name: Strom
+            min: 0
+            max: 5
+            needle: true
+            grid_options: { columns: 4 }
+          - type: gauge
+            entity: sensor.labornetzteil_leistung
+            name: Leistung
+            min: 0
+            max: 150
+            needle: true
+            grid_options: { columns: 4 }
+          - type: tile
+            entity: switch.labornetzteil_ausgang
+            name: Ausgang
+            icon: mdi:power
+            color: green
+            features_position: inline
+            features:
+              - type: toggle
+            grid_options: { columns: 12 }
+          - type: tile
+            entity: sensor.labornetzteil_betriebsmodus
+            name: Betriebsmodus
+            icon: mdi:sine-wave
+            grid_options: { columns: 6 }
+          - type: tile
+            entity: sensor.labornetzteil_schutzstatus
+            name: Schutzstatus
+            icon: mdi:shield-check
+            grid_options: { columns: 6 }
+
+      # ---------- Einstellungen ----------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Einstellungen
+            icon: mdi:tune-vertical
+          - type: tile
+            entity: number.labornetzteil_sollspannung
+            name: Sollspannung
+            icon: mdi:flash-triangle
+            color: amber
+            features:
+              - type: numeric-input
+                style: buttons
+            grid_options: { columns: 6 }
+          - type: tile
+            entity: number.labornetzteil_strombegrenzung
+            name: Strombegrenzung
+            icon: mdi:current-dc
+            color: blue
+            features:
+              - type: numeric-input
+                style: buttons
+            grid_options: { columns: 6 }
+          - type: tile
+            entity: number.labornetzteil_ovp_grenzwert
+            name: OVP (Überspannung)
+            icon: mdi:shield-alert
+            color: red
+            features:
+              - type: numeric-input
+                style: buttons
+            grid_options: { columns: 6 }
+          - type: tile
+            entity: number.labornetzteil_ocp_grenzwert
+            name: OCP (Überstrom)
+            icon: mdi:shield-alert
+            color: red
+            features:
+              - type: numeric-input
+                style: buttons
+            grid_options: { columns: 6 }
+          - type: markdown
+            content: >-
+              <small>Spannung möglichst bei **ausgeschaltetem Ausgang** ändern –
+              das HM305P bricht beim Umschalten unter Last kurz ein.</small>
+
+      # ---------- Presets ----------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Presets
+            icon: mdi:flash
+          - type: markdown
+            content: >-
+              <small>Jeder Preset schaltet den Ausgang **aus** und setzt OVP, OCP,
+              Strom und Spannung. Danach Ausgang selbst einschalten.</small>
+          - type: button
+            entity: button.labornetzteil_preset_3_3_v_0_5_a
+            name: 3,3 V · 0,5 A
+            icon: mdi:chip
+            tap_action: { action: toggle }
+            grid_options: { columns: 4, rows: 2 }
+          - type: button
+            entity: button.labornetzteil_preset_5_v_1_a
+            name: 5 V · 1 A
+            icon: mdi:usb
+            tap_action: { action: toggle }
+            grid_options: { columns: 4, rows: 2 }
+          - type: button
+            entity: button.labornetzteil_preset_12_v_2_a
+            name: 12 V · 2 A
+            icon: mdi:car-battery
+            tap_action: { action: toggle }
+            grid_options: { columns: 4, rows: 2 }
+          - type: button
+            entity: button.labornetzteil_preset_20_v_2_a
+            name: 20 V · 2 A
+            icon: mdi:laptop
+            tap_action: { action: toggle }
+            grid_options: { columns: 6, rows: 2 }
+          - type: button
+            entity: button.labornetzteil_kurzschlusssuche_1_v_1_a
+            name: Kurzschlusssuche
+            icon: mdi:magnify-scan
+            tap_action: { action: toggle }
+            grid_options: { columns: 6, rows: 2 }
+          - type: heading
+            heading: Gerätespeicher
+            heading_style: subtitle
+          - type: button
+            entity: button.labornetzteil_m1_laden
+            name: M1
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+          - type: button
+            entity: button.labornetzteil_m2_laden
+            name: M2
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+          - type: button
+            entity: button.labornetzteil_m3_laden
+            name: M3
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+          - type: button
+            entity: button.labornetzteil_m4_laden
+            name: M4
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+          - type: button
+            entity: button.labornetzteil_m5_laden
+            name: M5
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+          - type: button
+            entity: button.labornetzteil_m6_laden
+            name: M6
+            show_icon: false
+            tap_action: { action: toggle }
+            grid_options: { columns: 2, rows: 1 }
+
+      # ---------- Verlauf ----------
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Verlauf (letzte Stunde)
+            icon: mdi:chart-line
+          - type: history-graph
+            hours_to_show: 1
+            entities:
+              - entity: sensor.labornetzteil_spannung
+                name: Spannung
+              - entity: number.labornetzteil_sollspannung
+                name: Sollspannung
+          - type: history-graph
+            hours_to_show: 1
+            entities:
+              - entity: sensor.labornetzteil_strom
+                name: Strom
+              - entity: number.labornetzteil_strombegrenzung
+                name: Strombegrenzung
+          - type: history-graph
+            hours_to_show: 1
+            entities:
+              - entity: sensor.labornetzteil_leistung
+                name: Leistung
+
+      # ---------- Gerät ----------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Gerät
+            icon: mdi:information-outline
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.labornetzteil_tastenton
+                name: Tastenton
+              - entity: sensor.labornetzteil_opp_grenzwert
+                name: OPP (Überleistung)
+              - entity: sensor.labornetzteil_modellkennung
+                name: Modellkennung
+              - entity: sensor.labornetzteil_wlan_signal
+                name: WLAN-Signal
