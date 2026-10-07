@@ -1,0 +1,497 @@
+# ESPHome: Hanmatek HM305P / HM310P – STANDALONE + WEB UI
+# Works WITHOUT Home Assistant: open http://<device>.local in a browser.
+# Home Assistant stays optional: it discovers the device automatically.
+#
+# Wiring (same as hm305p-esp32c3.yaml):
+#   +  -> 5V        -  -> G
+#   R  -> GPIO21 (TX), direct
+#   T  -> 2k in series -> GPIO20 (RX), divider 2x2k to GND (5V -> ~3.3V)
+#
+# First start: no WiFi configured -> the ESP opens the hotspot "HM305P-Setup".
+# Connect with your phone, pick your WiFi, done.
+
+substitutions:
+  name: hm305p
+  friendly_name: HM305P
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true      # every unit gets a unique name, e.g. hm305p-a1b2c3
+  project:
+    name: danneloi.hm305p-esphome
+    version: "1.0.0"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  logs:
+    modbus_controller.sensor: INFO   # set to DEBUG for troubleshooting
+    sensor: INFO
+
+# Home Assistant API (optional – only used if you add the device to HA).
+# Without encryption so the prebuilt firmware works for everyone.
+# Recommended for your own build: add an encryption key.
+api:
+
+ota:
+  - platform: esphome
+  - platform: web_server        # firmware update via the web page
+
+wifi:
+  ap:
+    ssid: "HM305P-Setup"
+  # Optional for your own build:
+  # ssid: !secret wifi_ssid
+  # password: !secret wifi_password
+
+captive_portal:
+improv_serial:                  # WiFi setup via web.esphome.io after flashing
+
+web_server:
+  port: 80
+  version: 3
+  local: true                   # works without internet
+  js_include: "webui/hm305p-ui.js"
+
+uart:
+  id: uart_psu
+  tx_pin: GPIO21
+  rx_pin: GPIO20
+  baud_rate: 9600
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+  # Troubleshooting: show UART traffic in the log
+  # debug:
+  #   direction: BOTH
+  #   dummy_receiver: false
+
+modbus:
+  id: modbus_psu
+  uart_id: uart_psu
+  send_wait_time: 250ms
+
+modbus_controller:
+  - id: psu
+    modbus_id: modbus_psu
+    address: 0x01          # see hidden menu "Addr"
+    update_interval: 5s
+    command_throttle: 100ms
+    max_cmd_retries: 2
+    setup_priority: -10
+
+# ---------- Measurements ----------
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Voltage"
+    id: psu_voltage
+    register_type: holding
+    address: 0x0010
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Current"
+    id: psu_current
+    register_type: holding
+    address: 0x0011
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Power"
+    id: psu_power
+    register_type: holding
+    address: 0x0012        # 32 Bit: 0x0012 (high) + 0x0013 (low)
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.001
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Protection status (raw)"
+    id: psu_protect_raw
+    register_type: holding
+    address: 0x0002
+    value_type: U_WORD
+    accuracy_decimals: 0
+    entity_category: diagnostic
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Model ID"
+    register_type: holding
+    address: 0x0003
+    value_type: U_WORD
+    entity_category: diagnostic
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Operating mode (raw)"
+    id: psu_mode_raw
+    register_type: holding
+    address: 0xA012          # 2 = off, 4 = CV, 6 = CC
+    value_type: U_WORD
+    entity_category: diagnostic
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "OPP limit"
+    register_type: holding
+    address: 0x0022          # 32 Bit: 0x0022 (high) + 0x0023 (low)
+    value_type: U_DWORD
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    entity_category: diagnostic
+    filters:
+      - multiply: 0.001
+
+  # --- Memory slots M1–M6 (internal, used by the 'Load M' buttons) ---
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m1_v
+    internal: true
+    register_type: holding
+    address: 0x1000
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m1_i
+    internal: true
+    register_type: holding
+    address: 0x1001
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m2_v
+    internal: true
+    register_type: holding
+    address: 0x1010
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m2_i
+    internal: true
+    register_type: holding
+    address: 0x1011
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m3_v
+    internal: true
+    register_type: holding
+    address: 0x1020
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m3_i
+    internal: true
+    register_type: holding
+    address: 0x1021
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m4_v
+    internal: true
+    register_type: holding
+    address: 0x1030
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m4_i
+    internal: true
+    register_type: holding
+    address: 0x1031
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m5_v
+    internal: true
+    register_type: holding
+    address: 0x1040
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m5_i
+    internal: true
+    register_type: holding
+    address: 0x1041
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m6_v
+    internal: true
+    register_type: holding
+    address: 0x1050
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.01]
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    id: m6_i
+    internal: true
+    register_type: holding
+    address: 0x1051
+    value_type: U_WORD
+    skip_updates: 12
+    filters: [multiply: 0.001]
+
+  - platform: wifi_signal
+    name: "WiFi signal"
+    update_interval: 60s
+
+# ---------- Human-readable status ----------
+text_sensor:
+  - platform: template
+    name: "Protection status"
+    update_interval: 2s
+    lambda: |-
+      int v = (int) id(psu_protect_raw).state;
+      if (isnan(id(psu_protect_raw).state)) return {"unknown"};
+      if (v == 0) return {"OK"};
+      std::string s;
+      if (v & 0x01) s += "OVP ";
+      if (v & 0x02) s += "OCP ";
+      if (v & 0x04) s += "OPP ";
+      if (v & 0x08) s += "OTP ";
+      if (v & 0x10) s += "SCP ";
+      if (s.empty()) s = "Code " + to_string(v);
+      return s;
+
+  - platform: template
+    name: "Operating mode"
+    update_interval: 5s
+    lambda: |-
+      float v = id(psu_mode_raw).state;
+      if (isnan(v)) return {"unknown"};
+      switch ((int) v) {
+        case 2: return {"Off"};
+        case 4: return {"CV (constant voltage)"};
+        case 6: return {"CC (current limit)"};
+        default: return {"Code " + to_string((int) v)};
+      }
+
+# ---------- Output on/off ----------
+switch:
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Output"
+    id: psu_output
+    register_type: holding
+    address: 0x0001
+    bitmask: 1
+    icon: mdi:power
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Key beep"
+    register_type: holding
+    address: 0x8804
+    bitmask: 1
+    icon: mdi:volume-high
+    entity_category: config
+
+# ---------- Presets ----------
+# Each preset: output OFF -> OVP/OCP -> current -> voltage.
+# Turn the output on yourself afterwards (avoids the voltage dip under load).
+# Rule of thumb: OVP ~10 % above set voltage, OCP ~20 % above current limit.
+button:
+  - platform: template
+    name: "Preset 3.3 V / 0.5 A"
+    icon: mdi:flash
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_ovp, value: 3.8 }
+      - number.set: { id: psu_set_ocp, value: 0.6 }
+      - number.set: { id: psu_set_current, value: 0.5 }
+      - number.set: { id: psu_set_voltage, value: 3.3 }
+  - platform: template
+    name: "Preset 5 V / 1 A"
+    icon: mdi:flash
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_ovp, value: 5.6 }
+      - number.set: { id: psu_set_ocp, value: 1.2 }
+      - number.set: { id: psu_set_current, value: 1.0 }
+      - number.set: { id: psu_set_voltage, value: 5.0 }
+  - platform: template
+    name: "Preset 12 V / 2 A"
+    icon: mdi:flash
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_ovp, value: 13.2 }
+      - number.set: { id: psu_set_ocp, value: 2.4 }
+      - number.set: { id: psu_set_current, value: 2.0 }
+      - number.set: { id: psu_set_voltage, value: 12.0 }
+  - platform: template
+    name: "Preset 20 V / 2 A"
+    icon: mdi:flash
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_ovp, value: 22.0 }
+      - number.set: { id: psu_set_ocp, value: 2.4 }
+      - number.set: { id: psu_set_current, value: 2.0 }
+      - number.set: { id: psu_set_voltage, value: 20.0 }
+  - platform: template
+    name: "Short hunting 1 V / 1 A"
+    icon: mdi:magnify
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_ovp, value: 1.5 }
+      - number.set: { id: psu_set_ocp, value: 5.2 }   # OCP effectively off: CC mode is intended here
+      - number.set: { id: psu_set_current, value: 1.0 }
+      - number.set: { id: psu_set_voltage, value: 1.0 }
+
+# --- Load device memory M1–M6 (values as stored on the PSU) ---
+  - platform: template
+    name: "Load M1"
+    icon: mdi:numeric-1-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m1_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m1_v).state;' }
+  - platform: template
+    name: "Load M2"
+    icon: mdi:numeric-2-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m2_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m2_v).state;' }
+  - platform: template
+    name: "Load M3"
+    icon: mdi:numeric-3-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m3_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m3_v).state;' }
+  - platform: template
+    name: "Load M4"
+    icon: mdi:numeric-4-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m4_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m4_v).state;' }
+  - platform: template
+    name: "Load M5"
+    icon: mdi:numeric-5-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m5_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m5_v).state;' }
+  - platform: template
+    name: "Load M6"
+    icon: mdi:numeric-6-box
+    on_press:
+      - switch.turn_off: psu_output
+      - delay: 300ms
+      - number.set: { id: psu_set_current, value: !lambda 'return id(m6_i).state;' }
+      - number.set: { id: psu_set_voltage, value: !lambda 'return id(m6_v).state;' }
+
+# ---------- Setpoints ----------
+number:
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Set voltage"
+    id: psu_set_voltage
+    address: 0x0030
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    min_value: 0
+    max_value: 30
+    step: 0.01
+    multiply: 100
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "Current limit"
+    id: psu_set_current
+    address: 0x0031
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    min_value: 0
+    max_value: 5
+    step: 0.001
+    multiply: 1000
+    mode: box
+
+  # --- Protection limits (adjustable) ---
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "OVP limit"
+    id: psu_set_ovp
+    address: 0x0020
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    icon: mdi:shield-alert
+    min_value: 0
+    max_value: 33
+    step: 0.01
+    multiply: 100
+    mode: box
+
+  - platform: modbus_controller
+    modbus_controller_id: psu
+    name: "OCP limit"
+    id: psu_set_ocp
+    address: 0x0021
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    icon: mdi:shield-alert
+    min_value: 0
+    max_value: 5.2
+    step: 0.001
+    multiply: 1000
+    mode: box

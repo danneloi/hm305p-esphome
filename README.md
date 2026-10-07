@@ -2,7 +2,7 @@
 
 🇬🇧 English · **🇩🇪 [Deutsche Version / German version](README.de.md)**
 
-> 🇩🇪 **Alles auch auf Deutsch verfügbar:** Anleitung in [README.de.md](README.de.md), ESPHome-Konfiguration mit deutschen Entitätsnamen in [`hm305p-esp32c3.de.yaml`](hm305p-esp32c3.de.yaml), Dashboard in [`dashboard/dashboard.de.yaml`](dashboard/dashboard.de.yaml) und Vorschaubilder in [`images/preview.de.png`](images/preview.de.png) und [`images/dashboard.de.png`](images/dashboard.de.png).
+> 🇩🇪 **Alles auch auf Deutsch verfügbar:** Anleitung in [README.de.md](README.de.md), ESPHome-Konfiguration mit deutschen Entitätsnamen in [`hm305p-esp32c3.de.yaml`](hm305p-esp32c3.de.yaml), Dashboard in [`dashboard/dashboard.de.yaml`](dashboard/dashboard.de.yaml), Web-Oberfläche in [`hm305p-esp32c3-webui.de.yaml`](hm305p-esp32c3-webui.de.yaml) und Vorschaubilder in [`images/preview.de.png`](images/preview.de.png), [`images/dashboard.de.png`](images/dashboard.de.png) und [`images/webui.de.png`](images/webui.de.png).
 
 ![Preview](images/preview.png)
 
@@ -23,6 +23,7 @@ An **ESP32-C3 Super Mini** is wired directly to the PSU's internal UART, the 4-p
 | **Device memory** | "Load M1" … "Load M6" buttons apply the values stored on the PSU |
 | **Other** | Key beep on/off, model ID, WiFi signal |
 | **Dashboard** | Ready-made Home Assistant dashboard, see [Dashboard](#dashboard) |
+| **Web UI** | Standalone firmware with its own web interface, no Home Assistant needed, see [Web UI](#web-ui--without-home-assistant) |
 
 Every preset **turns the output off first**, then sets OVP → OCP → current → voltage. The output is deliberately **not** switched back on automatically: the HM305P briefly dips when the voltage changes under load, see [markrages/hm305p_problem](https://github.com/markrages/hm305p_problem).
 
@@ -100,6 +101,34 @@ It contains live gauges, output switch, operating mode (CV/CC), protection statu
 **Add it:** Settings → Dashboards → Add dashboard → *New dashboard from scratch* → open → ⋮ → Edit → ⋮ → *Raw configuration editor* → replace everything → Save.
 
 **Entity IDs:** The dashboard expects the entity IDs that Home Assistant creates for `hm305p-esp32c3.yaml` (device `bench-psu`), e.g. `sensor.bench_psu_voltage`. If you assign the device to an area, Home Assistant may put the area in front (e.g. `sensor.kitchen_bench_psu_voltage`). Check the real IDs under Settings → Devices → *bench-psu* and adjust them with search & replace in the raw editor. For the HM310P, raise the gauge maximum for current to 10 and for power to 300.
+---
+
+## Web UI – without Home Assistant
+
+![Web UI](images/webui.png)
+
+Not using Home Assistant or ESPHome? There is a **standalone firmware with its own web interface**. Open `http://hm305p-xxxxxx.local` (or the IP address) in any browser and control the power supply directly: live V/A/W, output on/off, set voltage, current limit, OVP/OCP, presets and M1–M6. Language switches automatically (EN/DE) and can be toggled.
+
+The Home Assistant files above are **not affected**. The web UI is a separate variant:
+
+| File | Purpose |
+|---|---|
+| `hm305p-esp32c3-webui.yaml` / `.de.yaml` | ESPHome config: everything from the HA version + web UI, WiFi setup hotspot, no secrets needed |
+| `webui/hm305p-ui.js` | The web interface, embedded in the firmware (works offline) |
+| Releases → `hm305p-webui-en.factory.bin` / `-de` | Ready-to-flash firmware |
+
+**Install without ESPHome:**
+
+1. Download `hm305p-webui-en.factory.bin` (or `-de`) from the [Releases](../../releases).
+2. Connect the ESP32-C3 via USB, open **[web.esphome.io](https://web.esphome.io)** in Chrome/Edge → *Connect* → *Install* → select the `.factory.bin`.
+3. After flashing, web.esphome.io offers to set up WiFi directly. Otherwise, connect your phone to the hotspot **HM305P-Setup** and choose your WiFi.
+4. Open `http://hm305p-xxxxxx.local` (the suffix is part of the MAC address; see your router for the IP).
+
+**Optional – add to Home Assistant later:** Home Assistant usually finds the device by itself ("New device discovered"). The web UI also shows host and port and has a button to open the ESPHome integration. The [dashboard](#dashboard) works with this firmware too (device name `hm305p-xxxxxx`, adjust the entity IDs).
+
+> The original ESPHome page is still there: button **"ESPHome view"** at the top right. Firmware updates are possible through that page (OTA).
+>
+> ⚠️ The prebuilt firmware has **no password** on the API or OTA so it works for everyone without configuration. Only use it in your home network. For your own build you can add `encryption:` / `password:` in the YAML.
 ---
 
 ## Modbus registers (selection)

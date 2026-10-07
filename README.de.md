@@ -21,6 +21,7 @@ Ein **ESP32-C3 Super Mini** hängt direkt am internen UART des Netzteils, also a
 | **Gerätespeicher** | Buttons „M1 laden“ … „M6 laden“ übernehmen die am Gerät gespeicherten Werte |
 | **Sonstiges** | Tastenton ein/aus, Modellkennung, WLAN-Signal |
 | **Dashboard** | Fertiges Home-Assistant-Dashboard, siehe [Dashboard](#dashboard) |
+| **Web-Oberfläche** | Eigenständige Firmware mit eigener Weboberfläche, ohne Home Assistant, siehe [Web-Oberfläche](#web-oberfläche--ohne-home-assistant) |
 
 Alle Presets schalten **zuerst den Ausgang aus** und setzen dann OVP → OCP → Strom → Spannung. Der Ausgang wird bewusst **nicht** automatisch eingeschaltet. Das HM305P bricht beim Ändern der Spannung unter Last kurz ein, siehe [markrages/hm305p_problem](https://github.com/markrages/hm305p_problem).
 
@@ -98,6 +99,34 @@ Enthalten sind Rundinstrumente für die Live-Werte, Ausgang-Schalter, Betriebsmo
 **Einfügen:** Einstellungen → Dashboards → Dashboard hinzufügen → *Neu von Grund auf* → öffnen → ⋮ → Bearbeiten → ⋮ → *Raw-Konfigurationseditor* → alles ersetzen → Speichern.
 
 **Entitäts-IDs:** Das Dashboard erwartet die IDs, die Home Assistant für `hm305p-esp32c3.de.yaml` (Gerät `labornetzteil`) anlegt, z. B. `sensor.labornetzteil_spannung`. Ist das Gerät einem Bereich zugeordnet, setzt Home Assistant den Bereich eventuell davor (z. B. `sensor.kuche_labornetzteil_spannung`). Die echten IDs findest du unter Einstellungen → Geräte → *labornetzteil*. Im Raw-Editor per Suchen/Ersetzen anpassen. Beim HM310P das Maximum der Rundinstrumente für Strom auf 10 und für Leistung auf 300 setzen.
+---
+
+## Web-Oberfläche – ohne Home Assistant
+
+![Web-Oberfläche](images/webui.de.png)
+
+Kein Home Assistant oder ESPHome? Dafür gibt es eine **eigenständige Firmware mit eigener Web-Oberfläche**. Einfach `http://hm305p-xxxxxx.local` (oder die IP-Adresse) im Browser öffnen und das Netzteil direkt bedienen: Live-Werte V/A/W, Ausgang an/aus, Sollspannung, Strombegrenzung, OVP/OCP, Presets und M1–M6. Die Sprache stellt sich automatisch ein (DE/EN) und lässt sich umschalten.
+
+Die Home-Assistant-Dateien oben sind davon **nicht betroffen**. Die Web-Oberfläche ist eine eigene Variante:
+
+| Datei | Zweck |
+|---|---|
+| `hm305p-esp32c3-webui.de.yaml` / `.yaml` | ESPHome-Konfiguration: alles aus der HA-Version + Web-Oberfläche, WLAN-Hotspot zur Einrichtung, keine secrets nötig |
+| `webui/hm305p-ui.js` | Die Web-Oberfläche, in die Firmware eingebettet (funktioniert ohne Internet) |
+| Releases → `hm305p-webui-de.factory.bin` / `-en` | Fertige Firmware zum Flashen |
+
+**Installation ohne ESPHome:**
+
+1. `hm305p-webui-de.factory.bin` (oder `-en`) unter [Releases](../../releases) herunterladen.
+2. ESP32-C3 per USB anschließen, **[web.esphome.io](https://web.esphome.io)** in Chrome/Edge öffnen → *Connect* → *Install* → die `.factory.bin` auswählen.
+3. Nach dem Flashen bietet web.esphome.io direkt die WLAN-Einrichtung an. Sonst mit dem Handy mit dem Hotspot **HM305P-Setup** verbinden und das WLAN auswählen.
+4. `http://hm305p-xxxxxx.local` öffnen (die Endung stammt aus der MAC-Adresse; die IP steht auch im Router).
+
+**Optional – später zu Home Assistant hinzufügen:** Home Assistant findet das Gerät meist von selbst („Neues Gerät gefunden“). Die Web-Oberfläche zeigt außerdem Host und Port und hat einen Button, der die ESPHome-Integration öffnet. Das [Dashboard](#dashboard) funktioniert auch mit dieser Firmware (Gerätename `hm305p-xxxxxx`, Entitäts-IDs anpassen).
+
+> Die originale ESPHome-Seite ist weiterhin da: Button **„ESPHome-Ansicht“** oben rechts. Darüber sind auch Firmware-Updates möglich (OTA).
+>
+> ⚠️ Die fertige Firmware hat **kein Passwort** auf API und OTA, damit sie ohne Einrichtung für alle funktioniert. Nur im Heimnetz verwenden. Beim eigenen Build kannst du in der YAML `encryption:` / `password:` ergänzen.
 ---
 
 ## Modbus-Register (Auswahl)
