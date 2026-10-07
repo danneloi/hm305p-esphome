@@ -1,0 +1,45 @@
+# Builds the standalone web UI firmware (EN + DE) and attaches it to a GitHub release.
+# Start manually (Actions → Build firmware → Run workflow) or by publishing a release.
+name: Build firmware
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - file: hm305p-esp32c3-webui.yaml
+            out: hm305p-webui-en
+          - file: hm305p-esp32c3-webui.de.yaml
+            out: hm305p-webui-de
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ESPHome
+        run: pip install esphome
+      - name: Compile
+        run: esphome compile ${{ matrix.file }}
+      - name: Collect binaries
+        run: |
+          mkdir -p dist
+          cp .esphome/build/hm305p/build/firmware.factory.bin dist/${{ matrix.out }}.factory.bin
+          cp .esphome/build/hm305p/build/firmware.ota.bin     dist/${{ matrix.out }}.ota.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.out }}
+          path: dist/*.bin
+      - name: Attach to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.bin
