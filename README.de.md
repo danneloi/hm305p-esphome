@@ -126,7 +126,37 @@ Die Home-Assistant-Dateien oben sind davon **nicht betroffen**. Die Web-Oberflä
 
 > Die originale ESPHome-Seite ist weiterhin da: Button **„ESPHome-Ansicht“** oben rechts. Darüber sind auch Firmware-Updates möglich (OTA).
 >
-> ⚠️ Die fertige Firmware hat **kein Passwort** auf API und OTA, damit sie ohne Einrichtung für alle funktioniert. Nur im Heimnetz verwenden. Beim eigenen Build kannst du in der YAML `encryption:` / `password:` ergänzen.
+> ⚠️ Die fertige Firmware hat **kein Passwort** auf API und OTA, damit sie ohne Einrichtung für alle funktioniert. Nur im Heimnetz verwenden, siehe [Sicherheit](#sicherheit). Beim eigenen Build kannst du in der YAML `encryption:` / `password:` ergänzen.
+
+**Automatische ESPHome-Updates:** Einmal pro Woche prüft ein GitHub-Workflow, ob es eine neue ESPHome-Version gibt. Wenn ja, wird die Firmware neu gebaut und als **Pre-Release** veröffentlicht (Tag z. B. `v1.0.0-esphome.2026.10.1`). Pre-Releases sind noch nicht auf echter Hardware getestet – wer auf Nummer sicher gehen will, nimmt das Release mit der Markierung **Latest**.
+
+### Web-Oberfläche zu einer bestehenden ESPHome-Installation hinzufügen
+
+Du nutzt schon `hm305p-esp32c3.de.yaml` mit Home Assistant? Dann brauchst du die eigene Firmware nicht. Behalte dein Gerät und ergänze nur den Webserver. Gerätename, Entitäten, API-Key und OTA-Passwort bleiben gleich, Home Assistant und das Dashboard funktionieren also weiter.
+
+1. `webui/hm305p-ui.js` in deinen ESPHome-Konfigurationsordner kopieren (meist `/config/esphome/webui/hm305p-ui.js`).
+2. In deiner YAML ergänzen:
+
+```yaml
+web_server:
+  port: 80
+  version: 3
+  local: true
+  js_include: "webui/hm305p-ui.js"
+  # optional Login:
+  # auth:
+  #   username: admin
+  #   password: !secret web_password
+```
+
+3. Drahtlos installieren und `http://<dein-gerät>.local` öffnen. Die Oberfläche erkennt deutsche und englische Entitätsnamen automatisch.
+
+### Sicherheit
+
+Solange du im Router keine Portfreigabe einrichtest, ist das Gerät nur im Heimnetz erreichbar. Ohne Passwort könnte aber **jedes Gerät in deinem Netz** den Ausgang schalten, die Spannung ändern oder eine neue Firmware aufspielen. Empfehlung:
+
+- Beim eigenen Build: API-Key und OTA-Passwort behalten, optional `auth:` für den Webserver ergänzen.
+- Fertige Firmware: für ein normales Heimnetz in Ordnung; Gäste und IoT-Geräte am besten in ein eigenes Netz.
 ---
 
 ## Modbus-Register (Auswahl)

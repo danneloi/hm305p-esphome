@@ -128,7 +128,37 @@ The Home Assistant files above are **not affected**. The web UI is a separate va
 
 > The original ESPHome page is still there: button **"ESPHome view"** at the top right. Firmware updates are possible through that page (OTA).
 >
-> ⚠️ The prebuilt firmware has **no password** on the API or OTA so it works for everyone without configuration. Only use it in your home network. For your own build you can add `encryption:` / `password:` in the YAML.
+> ⚠️ The prebuilt firmware has **no password** on the API or OTA so it works for everyone without configuration. Only use it in your home network, see [Security](#security). For your own build you can add `encryption:` / `password:` in the YAML.
+
+**Automatic ESPHome updates:** Once a week a GitHub workflow checks for a new ESPHome version. If there is one, the firmware is rebuilt and published as a **pre-release** (tag e.g. `v1.0.0-esphome.2026.10.1`). Pre-releases are not tested on hardware yet – use the release marked **Latest** if you want to be safe.
+
+### Add the web UI to an existing ESPHome setup
+
+Already running `hm305p-esp32c3.yaml` with Home Assistant? You don't need the separate firmware. Keep your device and simply add the web server. Device name, entities, API key and OTA password stay the same, so Home Assistant and the dashboard keep working.
+
+1. Copy `webui/hm305p-ui.js` into your ESPHome config folder (usually `/config/esphome/webui/hm305p-ui.js`).
+2. Add to your YAML:
+
+```yaml
+web_server:
+  port: 80
+  version: 3
+  local: true
+  js_include: "webui/hm305p-ui.js"
+  # optional login:
+  # auth:
+  #   username: admin
+  #   password: !secret web_password
+```
+
+3. Install wirelessly, then open `http://<your-device>.local`. The UI detects English and German entity names automatically.
+
+### Security
+
+The device is only reachable inside your home network as long as you don't forward any ports on your router. Without passwords, however, **every device in your network** could switch the output, change the voltage or flash new firmware. Recommendations:
+
+- For your own build: keep the API key and OTA password, and optionally add `auth:` to the web server.
+- Prebuilt firmware: fine for a normal home network; keep guests and IoT devices in a separate network if possible.
 ---
 
 ## Modbus registers (selection)
